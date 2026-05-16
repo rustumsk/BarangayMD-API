@@ -1,15 +1,14 @@
 const axios = require('axios');
 
 function buildSMSMessage(vitals, aiResult) {
-  return `BarangayMD ALERT: ${aiResult.status}\n` +
+  return `BarangayMD ${aiResult.status}\n` +
     `HR:${vitals.heart_rate}bpm SpO2:${vitals.spo2}% ` +
     `Temp:${vitals.body_temp}C BP:${vitals.blood_pressure}\n` +
-    `${aiResult.advice}`;
+    `Diagnosis: ${aiResult.diagnosis}\n` +
+    `Action: ${aiResult.doctor_advice}`;
 }
 
 async function sendAlert(vitals, aiResult) {
-
-  // Send SMS via UniSMS
   try {
     const smsMessage = buildSMSMessage(vitals, aiResult);
     console.log(`📱 SMS length: ${smsMessage.length} chars`);
@@ -35,7 +34,6 @@ async function sendAlert(vitals, aiResult) {
   }
 
   // Email disabled for now
-  // TODO: set up Resend when ready
 }
 
 module.exports = { sendAlert };
