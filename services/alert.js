@@ -1,37 +1,24 @@
-const nodemailer = require('nodemailer');
 const axios = require('axios');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+function buildSMSMessage(vitals, aiResult) {
+  return `BarangayMD ALERT: ${aiResult.status}\n` +
+    `HR:${vitals.heart_rate}bpm SpO2:${vitals.spo2}% ` +
+    `Temp:${vitals.body_temp}C BP:${vitals.blood_pressure}\n` +
+    `${aiResult.advice}`;
+}
 
 async function sendAlert(vitals, aiResult) {
-  const message =
-`🚨 ${aiResult.status} ALERT — BarangayMD
-─────────────────────────
-❤️  Heart Rate     : ${vitals.heart_rate} bpm
-🩸 SpO2           : ${vitals.spo2}%
-🌡️  Body Temp      : ${vitals.body_temp}°C
-💧 Humidity       : ${vitals.humidity}%
-🩺 Blood Pressure : ${vitals.blood_pressure}
-─────────────────────────
-📋 Summary : ${aiResult.summary}
-💡 Advice  : ${aiResult.advice}
-─────────────────────────
-Please respond immediately.
-Sent by BarangayMD Health Kiosk`;
 
+  // Send SMS via UniSMS
   try {
-    // Send SMS via UniSMS
+    const smsMessage = buildSMSMessage(vitals, aiResult);
+    console.log(`📱 SMS length: ${smsMessage.length} chars`);
+
     await axios.post(
       'https://unismsapi.com/api/sms',
       {
-        recipient: process.env.DOCTOR_PHONE, // must be +639XXXXXXXXX format
-        content: message
+        recipient: process.env.DOCTOR_PHONE,
+        content: smsMessage
       },
       {
         auth: {
@@ -41,24 +28,14 @@ Sent by BarangayMD Health Kiosk`;
         headers: { 'Content-Type': 'application/json' }
       }
     );
-    console.log('SMS sent');
+    console.log('✅ SMS sent');
   } catch (err) {
-    console.error('SMS failed:', err.message);
+    const detail = err.response?.data || err.message;
+    console.error('SMS failed:', JSON.stringify(detail));
   }
 
-  try {
-    // Send Email
-    await transporter.sendMail({
-      from: `BarangayMD <${process.env.EMAIL_USER}>`,
-      to: process.env.DOCTOR_EMAIL,
-      subject: `🚨 BarangayMD ${aiResult.status} Alert`,
-      text: message,
-      html: `<pre style="font-family: monospace; font-size: 14px">${message}</pre>`
-    });
-    console.log('✅ Email sent');
-  } catch (err) {
-    console.error('Email failed:', err.message);
-  }
+  // Email disabled for now
+  // TODO: set up Resend when ready
 }
 
 module.exports = { sendAlert };
