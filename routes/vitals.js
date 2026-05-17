@@ -10,12 +10,25 @@ router.post('/', async (req, res) => {
   try {
     const vitals = req.body;
 
+    // Check required fields exist
     const required = ['spo2', 'heart_rate', 'body_temp', 'humidity', 'blood_pressure'];
     for (const field of required) {
       if (vitals[field] === undefined) {
         return res.status(400).json({ error: `Missing field: ${field}` });
       }
     }
+
+    // Check values are not zero or empty
+    if (
+      vitals.spo2 === 0 ||
+      vitals.heart_rate === 0 ||
+      vitals.body_temp === 0 ||
+      vitals.blood_pressure === '--/--' ||
+      vitals.blood_pressure === ''
+    ) {
+      return res.status(400).json({ error: 'Invalid vitals — all values must be non-zero' });
+    }
+
 
     console.log('🤖 Getting AI diagnosis...');
     const aiResult = await summarizeVitals(vitals);
